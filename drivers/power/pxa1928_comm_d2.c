@@ -454,7 +454,7 @@ void release_seagull(void)
 #if 0
 	uint32_t dummy_read_apb = 0;
 #endif
-//	uint32_t timeout = 0;
+	uint32_t timeout = 0;
 
 	if (((*(uint32_t *)0xd4050004) & 0xf) == 0xb) {
 		printf("Seagull/MSA is in D2 state already\n");
@@ -485,18 +485,20 @@ void release_seagull(void)
 	/* Seagull reset */
 	*(uint32_t *)0xd4051020 &= ~(0x00000080); /*Seagull reset*/
 
-//	timeout = 100;
+	/* BR2 production: timeout enabled (was commented out in the
+	 * disclosed source). Reconstructed from the production binary:
+	 * delay-free spin, banner prints when the counter reaches 0 on
+	 * the pass where the state becomes 0xb. */
+	udelay(1000);
+
+	timeout = 1000000;
 	while (((*(volatile uint32_t *)0xd4050004) & 0xf) != 0xb)
 	{
-		cpu_relax();
-//		if(--timeout == 0)
-//			break;
-		mdelay(10);
+		if (--timeout == -1)
+			break;
 	}
-//	if (timeout != 0)
-//		printf("CP is in idle!\n");
-//	else
-//		printf("Warning: CP is NOT in idle!\n");
+	if (timeout == 0)
+		printf("======= release_seagull timeout ===============\n");
 
 	if (cpu_is_pxa1928_a0())
 		*(uint32_t *)0xd4051204 = 0x00000000;
