@@ -28,3 +28,18 @@ obj-$(CONFIG_PXA988_LPM_TEST) += mmp_idle.o
 obj-$(CONFIG_PXA1908_LPM) += pxa1908_idle.o
 obj-$(CONFIG_PXA1936_LPM) += pxa1936_idle.o
 obj-$(CONFIG_PXA1928_LPM) += pxa1928_idle.o
+
+# BR2-specific production CP/MSA code. BS/MA03 retains the original arrays.
+obj-$(CONFIG_BR2_PRODUCTION_COPROCESSOR) += br2_coprocessor_blobs.o
+
+ifneq ($(CONFIG_BR2_PRODUCTION_COPROCESSOR),)
+$(obj)br2_d2_07e.bin: $(src)br2_d2_07e.bin.gz
+	$(Q)gzip -dc $< > $@.tmp && mv $@.tmp $@
+
+$(obj)br2_d2_07f.bin: $(src)br2_d2_07f.bin.gz
+	$(Q)gzip -dc $< > $@.tmp && mv $@.tmp $@
+
+$(obj)br2_coprocessor_blobs.o: $(obj)br2_d2_07e.bin $(obj)br2_d2_07f.bin
+# GNU as looks for .incbin files in this build output directory.
+AFLAGS_drivers/power/br2_coprocessor_blobs.o += -Wa,-I,$(if $(obj),$(obj),.)
+endif

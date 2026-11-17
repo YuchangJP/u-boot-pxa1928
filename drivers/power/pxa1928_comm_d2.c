@@ -25,6 +25,14 @@
 
 #define cpu_relax() barrier()
 
+/* The BR2 (MA04) production U-Boot copies different, much larger CP/MSA
+ * images than the original MA03/BS binaries. Keep the BS arrays intact. */
+#ifdef CONFIG_BR2_PRODUCTION_COPROCESSOR
+extern const unsigned char br2_d2_07e_image[];
+extern const unsigned char br2_d2_07f_image[];
+#define BR2_D2_07E_SIZE 8544U
+#define BR2_D2_07F_SIZE 8828U
+#else
 uint32_t sg_d2_b0_ops[] = {
 	0xea000006,
 	0xeafffffe,
@@ -449,6 +457,8 @@ uint32_t msa_d2_ops[] = {
 	0x20000024
 };
 
+#endif /* !CONFIG_BR2_PRODUCTION_COPROCESSOR */
+
 void release_seagull(void)
 {
 #if 0
@@ -474,7 +484,12 @@ void release_seagull(void)
 		*(uint32_t *)0xd4051088 = 0x00000083;
 
 	/* SW REMAP FOR CP CORE */
-	*(uint32_t *)0xd4051084 = 0x00010600; /*mapp to 0x06000000*/
+#ifdef CONFIG_BR2_PRODUCTION_COPROCESSOR
+	/* BR2 production remaps the CP core to 0x07e00000. */
+	*(uint32_t *)0xd4051084 = 0x000107e0;
+#else
+	*(uint32_t *)0xd4051084 = 0x00010600; /* map to 0x06000000 */
+#endif
 	/* Seagull clocks */
 	*(uint32_t *)0xd4050000 |= (0x3 << 25);
 	*(uint32_t *)0xd4051000 |= (0x3 << 25);
@@ -511,6 +526,13 @@ static void comm_d2(void)
 	/* set BB_F_SLP in PMUM_SCCR to vote VCXO_SD */
 	*(uint32_t *)0xd4050038 |= (0x1 << 2);
 
+#ifdef CONFIG_BR2_PRODUCTION_COPROCESSOR
+	/* Byte-for-byte copies recovered from stock BR2 U-Boot cp_d2(). */
+	dest = (void *)0x07e00000;
+	memcpy(dest, br2_d2_07e_image, BR2_D2_07E_SIZE);
+	dest = (void *)0x07f00000;
+	memcpy(dest, br2_d2_07f_image, BR2_D2_07F_SIZE);
+#else
 	dest = (void *)0x06000000;
 	if (cpu_is_pxa1928_a0())
 		memcpy(dest, sg_d2_a0_ops, (ARRAY_SIZE(sg_d2_a0_ops) * 4));
@@ -518,6 +540,7 @@ static void comm_d2(void)
 		memcpy(dest, sg_d2_b0_ops, (ARRAY_SIZE(sg_d2_b0_ops) * 4));
 	dest = (void *)0x07000000;
 	memcpy(dest, msa_d2_ops, (ARRAY_SIZE(msa_d2_ops) * 4));
+#endif
 	flush_dcache_all();
 	release_seagull();
 }
