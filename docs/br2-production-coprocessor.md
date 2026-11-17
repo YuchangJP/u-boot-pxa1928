@@ -48,14 +48,25 @@ are byte-identical to the stock implementation.
 The AOSP prebuilt toolchain has been pinned at
 `a7bb6f39cd99b2fb26ecc2d3cb984d18cd259d24`:
 `aarch64-linux-android-gcc 4.9.x-google 20140827` and GNU ld 2.24.
-With that compiler, the revised BR2 image measures **666176 bytes** versus
-the **666112-byte** stock valid-image length (a remaining +64 bytes).
-The BR2 firmware images are present at rebuilt offsets `0x939d8` (07F) and
-`0x95c54` (07E), versus stock offsets `0x939b0` and `0x95c30`.
-This is much closer in *placement* than the earlier `.rodata` output, but
-**not yet byte-identical**; other code and relocation differences remain.
+With that compiler and the stock-MICOM display configuration, the revised
+BR2 `u-boot.bin` measures **666112 bytes**, equal to the **666112-byte**
+stock valid-image length. Both rebuilt and stock relocation tables start
+at `0x9b7a0` and contain 1220 AArch64 RELATIVE entries. However, the
+individual bytes and relocation addends are **not yet identical**.
+The BR2 firmware images are present at rebuilt offsets `0x93998` (07F) and
+`0x95c14` (07E), versus stock offsets `0x939b0` and `0x95c30`.
+That is a remaining 24–28-byte placement difference for these payloads.
 An identical-offset match percentage alone is misleading because of shifted
 sections and PC-relative addresses.
+
+### Optional MICOM panel variation
+
+The disclosed MA04 source also included GPIO195 `get_board_micom()` detection
+and additional conditionals in `vx5b1d_init`. These are **absent from the
+stock BR2 panel-initialization call sequence**. They are now disabled in the
+default stock-oriented MA04 build, but can be re-enabled with
+`CONFIG_BR2_MICOM_VARIANT` if a different board revision requires those
+specific LCD settings. The MA03 implementation is unchanged.
 
 The MA03/BS image is not affected by the BR2-specific code changes.
 With the original toolchain it remains the same 651384-byte size as stock,
