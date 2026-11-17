@@ -218,6 +218,8 @@
 #define CONFIG_SUPPORT_RAW_INITRD
 #define CONFIG_PXA1928_DFC
 #define CONFIG_DDR_HW_DFC
+/* BR2 production-only CP/MSA memory layout and embedded images. */
+#define CONFIG_BR2_PRODUCTION_COPROCESSOR 1
 #define CONFIG_PXA1928_COMM_D2
 
 #define CONFIG_VIDEO_VX5B1D

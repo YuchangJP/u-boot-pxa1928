@@ -893,6 +893,11 @@ int board_early_init_f(void)
 		(MFP_REG(0x314) | MFP_AF0 | MFP_PULL_HIGH), /* GPIO197_MFP197 */
 		(MFP_REG(0x218) | MFP_AF0 | MFP_DRIVE_MEDIUM), /* GPIO135_MFP135 */
 
+		/* BR2 production additions, seen in stock board_early_init_f() MFP table. */
+		(MFP_REG(0x108) | MFP_AF2 | MFP_DRIVE_MEDIUM),
+		(MFP_REG(0x254) | MFP_AF0 | MFP_PULL_HIGH), /* GPIO148: BR2 strap */
+		(MFP_REG(0x258) | MFP_AF0 | MFP_PULL_HIGH), /* GPIO149: BR2 strap */
+
 		/* End of configureation */
 		MFP_EOC
 	};
