@@ -1075,7 +1075,9 @@ unsigned int dtb_offset(void)
 /* BR2 production addition (reconstructed from the production binary;
  * not present in the disclosed source): sensor-population strap.
  * Returns GPIO149 ^ GPIO148. */
-static int br2_sensor_strap(void)
+/* Stock BR2 emits a standalone GPIO149 XOR GPIO148 helper.
+ * Suppress GCC's automatic inlining to preserve the original call boundary. */
+static __attribute__((noinline)) int br2_sensor_strap(void)
 {
 	int v148, v149;
 
