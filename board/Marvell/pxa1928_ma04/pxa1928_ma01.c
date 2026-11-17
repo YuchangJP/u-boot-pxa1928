@@ -71,7 +71,11 @@ DECLARE_GLOBAL_DATA_PTR;
 int get_lcd_landscape(void);
 static int get_lcd_power(void);
 static int get_board_version(void);
+/* GPIO195 MICOM panel variant is not present in the stock 2019 BR2 ROM.
+ * Keep the optional extension available only when explicitly enabled. */
+#ifdef CONFIG_BR2_MICOM_VARIANT
 static int get_board_micom(void);
+#endif
 
 static unsigned int revision = 0;
 
@@ -396,7 +400,11 @@ static void panel_wxga_init_config(struct mmp_disp_info *fbi,int en)
 {
 	if(en) {
 		vx5b1d_reset();
+		#ifdef CONFIG_BR2_MICOM_VARIANT
 		if (0 != vx5b1d_init(get_lcd_landscape(),get_lcd_power(),get_board_micom()))
+#else
+		if (0 != vx5b1d_init(get_lcd_landscape(),get_lcd_power()))
+#endif
 			return NULL;
 	}
 }
@@ -687,6 +695,7 @@ static int get_lcd_power(void)
 	return ret;
 }
 
+#ifdef CONFIG_BR2_MICOM_VARIANT
 static int get_board_micom(void)
 {
 	int ret,micom;
@@ -703,6 +712,7 @@ static int get_board_micom(void)
 
 	return ret;
 }
+#endif
 
 static void show_logo(int type)
 {
