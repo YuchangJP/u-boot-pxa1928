@@ -464,7 +464,9 @@ void release_seagull(void)
 #if 0
 	uint32_t dummy_read_apb = 0;
 #endif
+#ifdef CONFIG_BR2_PRODUCTION_COPROCESSOR
 	uint32_t timeout = 0;
+#endif
 
 	if (((*(uint32_t *)0xd4050004) & 0xf) == 0xb) {
 		printf("Seagull/MSA is in D2 state already\n");
@@ -500,20 +502,24 @@ void release_seagull(void)
 	/* Seagull reset */
 	*(uint32_t *)0xd4051020 &= ~(0x00000080); /*Seagull reset*/
 
-	/* BR2 production: timeout enabled (was commented out in the
-	 * disclosed source). Reconstructed from the production binary:
-	 * delay-free spin, banner prints when the counter reaches 0 on
-	 * the pass where the state becomes 0xb. */
+#ifdef CONFIG_BR2_PRODUCTION_COPROCESSOR
+	/* BR2 production: bounded spin with the recovered timeout message. */
 	udelay(1000);
-
 	timeout = 1000000;
-	while (((*(volatile uint32_t *)0xd4050004) & 0xf) != 0xb)
-	{
+	while (((*(volatile uint32_t *)0xd4050004) & 0xf) != 0xb) {
 		if (--timeout == -1)
 			break;
 	}
 	if (timeout == 0)
 		printf("======= release_seagull timeout ===============\n");
+#else
+	/* MA03/BS production: unbounded poll with a 10ms delay.  Do not
+	 * use the BR2 timeout or the BR2-only warning message here. */
+	while (((*(volatile uint32_t *)0xd4050004) & 0xf) != 0xb) {
+		cpu_relax();
+		mdelay(10);
+	}
+#endif
 
 	if (cpu_is_pxa1928_a0())
 		*(uint32_t *)0xd4051204 = 0x00000000;
