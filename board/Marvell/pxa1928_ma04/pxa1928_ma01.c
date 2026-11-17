@@ -1067,6 +1067,21 @@ unsigned int dtb_offset(void)
 	return 0;
 }
 
+/* BR2 production addition (reconstructed from the production binary;
+ * not present in the disclosed source): sensor-population strap.
+ * Returns GPIO149 ^ GPIO148. */
+static int br2_sensor_strap(void)
+{
+	int v148, v149;
+
+	gpio_direction_input(149);
+	gpio_direction_input(148);
+	v149 = gpio_get_value(149);
+	v148 = gpio_get_value(148);
+
+	return v149 ^ v148;
+}
+
 void handle_dtb(struct fdt_header *devtree)
 {
 	char cmd[128];
@@ -1157,6 +1172,21 @@ void handle_dtb(struct fdt_header *devtree)
 		run_command("fdt rm /soc/axi/wakeupgen@d4284000", 0);
 		/* set patch flag of uart break for B0 stepping */
 		run_command("fdt set /soc/apb@d4000000/uart@d4018000 break-abnormal <1>", 0);
+	}
+
+	/* BR2 production additions (reconstructed from the production
+	 * binary; not present in the disclosed source): unconditional
+	 * MMC1 caps fixup, then remove the DT nodes of the sensor set
+	 * that is not populated on this board variant. */
+	run_command("fdt set /soc/axi@d4200000/sdh@d4280000 marvell,sdh-host-caps-disable <0xf8000>", 0);
+	if (br2_sensor_strap()) {
+		run_command("fdt rm /gps", 0);
+		run_command("fdt rm /soc/apb@d4000000/i2c@d4031000/lsm9ds1_mag@1c", 0);
+		run_command("fdt rm /soc/apb@d4000000/i2c@d4031000/lsm9ds1_acc_gyro@6a", 0);
+		run_command("fdt rm /soc/apb@d4000000/i2c@d4033000/isl29023@44", 0);
+		run_command("fdt rm /soc/apb@d4000000/map@c3000000/mmp_map_be_tdm marvell,right-out", 0);
+	} else {
+		run_command("fdt rm /soc/apb@d4000000/i2c@d4031000/mma8652@1d", 0);
 	}
 }
 #endif /* CONFIG_OF_LIBFDT */
@@ -1475,7 +1505,7 @@ int misc_init_r(void)
 		}
 
 		reason = get_boot_up_reason(&emmd_page->pmic_power_status);
-#if 1 /*AC‚âUSB‚ğ‘}‚µ‚Ä‚à‹N“®‚µ‚È‚¢‚æ‚¤‚É‚·‚é‚É‚Í‚±‚±‚ğ—LŒø‚É*/
+#if 1 /*ACã‚„USBã‚’æŒ¿ã—ã¦ã‚‚èµ·å‹•ã—ãªã„ã‚ˆã†ã«ã™ã‚‹ã«ã¯ã“ã“ã‚’æœ‰åŠ¹ã«*/
 		if(reason == SYS_BR_CHARGE)
 		{
 			printf("power off\n");
@@ -2224,7 +2254,7 @@ static void wait_battery_charge(void)
 		if((short)p_bat->pbat->bat->state_of_chrg <= CONFIG_BATTERY_GUARD_SOC)
 		{
 			reason = get_boot_up_reason(&emmd_page->pmic_power_status);
-			if(reason != SYS_BR_CHARGE) /*AC‚âUSB‚ğ‘}‚µ‚Ä‚à‹N“®‚µ‚È‚¢‚æ‚¤‚É‚·‚é‚É‚Í‚±‚±‚ğ—LŒø‚É*/
+			if(reason != SYS_BR_CHARGE) /*ACã‚„USBã‚’æŒ¿ã—ã¦ã‚‚èµ·å‹•ã—ãªã„ã‚ˆã†ã«ã™ã‚‹ã«ã¯ã“ã“ã‚’æœ‰åŠ¹ã«*/
 			{
 				turn_on_backlight();
 				show_logo(2);
