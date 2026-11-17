@@ -1,0 +1,62 @@
+name: Build PXA1928 U-Boot (BR2 and BS)
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'board/**'
+      - 'arch/**'
+      - 'drivers/**'
+      - 'include/**'
+      - 'Makefile'
+      - 'config.mk'
+      - 'boards.cfg'
+      - '.github/workflows/build-pxa1928.yml'
+  workflow_dispatch:
+
+jobs:
+  u-boot:
+    name: Compile ${{ matrix.board }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        board: [pxa1928_ma04, pxa1928_ma03]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install AArch64 cross compiler and legacy U-Boot build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu bc bison flex libssl-dev gzip
+          aarch64-linux-gnu-gcc --version | head -1
+          aarch64-linux-gnu-ld --version | head -1
+      - name: Configure and build (complete U-Boot)
+        shell: bash
+        run: |
+          set -o pipefail
+          make ${{ matrix.board }}_config 2>&1 | tee configure-${{ matrix.board }}.log
+          make -j2 CROSS_COMPILE=aarch64-linux-gnu- V=1 2>&1 | tee build-${{ matrix.board }}.log
+      - name: Record outputs
+        if: always()
+        shell: bash
+        run: |
+          printf 'board=%s\nsha=%s\n' "${{ matrix.board }}" "${{ github.sha }}" > build-details.txt
+          (file u-boot u-boot.bin 2>/dev/null || true) >> build-details.txt
+          (sha256sum u-boot.bin u-boot 2>/dev/null || true) >> build-details.txt
+          (ls -lh u-boot u-boot.bin 2>/dev/null || true) >> build-details.txt
+      - name: Upload build or failure logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u-boot-${{ matrix.board }}
+          if-no-files-found: warn
+          path: |
+            configure-${{ matrix.board }}.log
+            build-${{ matrix.board }}.log
+            build-details.txt
+            u-boot
+            u-boot.bin
+            u-boot.map
+            u-boot.sym
+            System.map
