@@ -28,15 +28,16 @@ jobs:
       - name: Install AArch64 cross compiler and legacy U-Boot build prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu bc bison flex libssl-dev gzip
-          aarch64-linux-gnu-gcc --version | head -1
-          aarch64-linux-gnu-ld --version | head -1
+          sudo apt-get install -y bc bison flex libssl-dev gzip
+          git clone --depth 1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 "${RUNNER_TEMP}/aarch64-gcc49"
+          "${RUNNER_TEMP}/aarch64-gcc49/bin/aarch64-linux-android-gcc" --version | head -1
+          "${RUNNER_TEMP}/aarch64-gcc49/bin/aarch64-linux-android-ld" --version | head -1
       - name: Configure and build (complete U-Boot)
         shell: bash
         run: |
           set -o pipefail
           make ${{ matrix.board }}_config 2>&1 | tee configure-${{ matrix.board }}.log
-          make -j2 CROSS_COMPILE=aarch64-linux-gnu- V=1 2>&1 | tee build-${{ matrix.board }}.log
+          make -j2 CROSS_COMPILE="${RUNNER_TEMP}/aarch64-gcc49/bin/aarch64-linux-android-" V=1 2>&1 | tee build-${{ matrix.board }}.log
       - name: Record outputs
         if: always()
         shell: bash
