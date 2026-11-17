@@ -29,10 +29,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y bc bison flex libssl-dev gzip
-          git clone --depth 1 --branch pie-release https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 "${RUNNER_TEMP}/aarch64-gcc49"
+          # Pin to the AOSP prebuilt whose SOURCES specifies GCC 20140827 and binutils 2.24.
+          git init -q "${RUNNER_TEMP}/aarch64-gcc49"
+          git -C "${RUNNER_TEMP}/aarch64-gcc49" remote add origin https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
+          git -C "${RUNNER_TEMP}/aarch64-gcc49" fetch --depth 1 origin a7bb6f39cd99b2fb26ecc2d3cb984d18cd259d24
+          git -C "${RUNNER_TEMP}/aarch64-gcc49" checkout -q --detach FETCH_HEAD
           test -x "${RUNNER_TEMP}/aarch64-gcc49/bin/aarch64-linux-android-gcc"
           "${RUNNER_TEMP}/aarch64-gcc49/bin/aarch64-linux-android-gcc" --version | head -1
           "${RUNNER_TEMP}/aarch64-gcc49/bin/aarch64-linux-android-ld" --version | head -1
+          "${RUNNER_TEMP}/aarch64-gcc49/bin/aarch64-linux-android-gcc" --version | head -1 | grep '20140827'
+          "${RUNNER_TEMP}/aarch64-gcc49/bin/aarch64-linux-android-ld" --version | head -1 | grep '2.24'
       - name: Configure and build (complete U-Boot)
         shell: bash
         run: |
@@ -44,6 +50,9 @@ jobs:
         shell: bash
         run: |
           printf 'board=%s\nsha=%s\n' "${{ matrix.board }}" "${{ github.sha }}" > build-details.txt
+          printf 'toolchain_commit=%s\\n' 'a7bb6f39cd99b2fb26ecc2d3cb984d18cd259d24' >> build-details.txt
+          "${RUNNER_TEMP}/aarch64-gcc49/bin/aarch64-linux-android-gcc" --version | head -1 >> build-details.txt
+          "${RUNNER_TEMP}/aarch64-gcc49/bin/aarch64-linux-android-ld" --version | head -1 >> build-details.txt
           (file u-boot u-boot.bin 2>/dev/null || true) >> build-details.txt
           (sha256sum u-boot.bin u-boot 2>/dev/null || true) >> build-details.txt
           (ls -lh u-boot u-boot.bin 2>/dev/null || true) >> build-details.txt
