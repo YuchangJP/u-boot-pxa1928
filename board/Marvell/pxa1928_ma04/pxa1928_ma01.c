@@ -1089,13 +1089,10 @@ static noinline int br2_sensor_strap(void)
 	/* Match stock BR2's comparison-based strap handling:
 	 * only invert actual 0/1 GPIO values when GPIO149 is exactly 1.
 	 * Preserve other raw gpio_get_value() values, unlike bitwise XOR. */
-	if (v148 == 1) {
-		if (v149 == 1)
-			v148 = 0;
-	} else if (v148 == 0) {
-		if (v149 == 1)
-			v148 = 1;
-	}
+	if (v149 == 1 && v148 == 1)
+		v148 = 0;
+	else if (v149 == 1 && v148 == 0)
+		v148 = 1;
 	return v148;
 }
 
