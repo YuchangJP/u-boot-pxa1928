@@ -1077,7 +1077,7 @@ unsigned int dtb_offset(void)
  * Returns GPIO149 ^ GPIO148. */
 /* Stock BR2 emits a standalone GPIO149 XOR GPIO148 helper.
  * Suppress GCC's automatic inlining to preserve the original call boundary. */
-static __attribute__((noinline)) int br2_sensor_strap(void)
+static noinline int br2_sensor_strap(void)
 {
 	int v148, v149;
 
