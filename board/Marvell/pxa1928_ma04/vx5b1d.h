@@ -13,7 +13,11 @@
 #endif /* !CONFIG_VIDEO_VX5B1D */
 
 extern void vx5b1d_reset(void);
+#ifdef CONFIG_BR2_MICOM_VARIANT
 extern int vx5b1d_init(int landscape, int power, int micom);
+#else
+extern int vx5b1d_init(int landscape, int power);
+#endif
 extern int vx5b1d_pwm_ctrl(int enable, uint32_t freq, uint16_t h_time);
 extern int vx5b1d_vee_ctrl(int enable, u16 vee);
 
