@@ -3,6 +3,8 @@ name: Build PXA1928 U-Boot (BR2 and BS)
 on:
   push:
     branches: [master]
+  pull_request:
+    branches: [master]
     paths:
       - 'board/**'
       - 'arch/**'

@@ -275,7 +275,11 @@ void vx5b1d_reset(void)
  * Initialization
  *
  ******************************************************************************/
+#ifdef CONFIG_BR2_MICOM_VARIANT
 int vx5b1d_init(int landscape,int power,int micom)
+#else
+int vx5b1d_init(int landscape,int power)
+#endif
 {
 	int i;
 	uint32_t ready;
@@ -313,6 +317,7 @@ int vx5b1d_init(int landscape,int power,int micom)
 			uint32_t addr = vx5b1d_reg_table_p_spi[i+0];
 			uint32_t data = vx5b1d_reg_table_p_spi[i+1];
 
+#ifdef CONFIG_BR2_MICOM_VARIANT
 			if(micom)
 			{
 					if(addr == 0x138)
@@ -322,6 +327,7 @@ int vx5b1d_init(int landscape,int power,int micom)
 					if(addr == 0x140)
 						data = 0x1A000;
 			}
+#endif
 			ret = vx5b1d_reg_write32(addr, data);
 			if (ret != 0) {
 				printf(TAG ": cannot write register. (seq=%d)\n", i);
@@ -329,7 +335,9 @@ int vx5b1d_init(int landscape,int power,int micom)
 			}
 		}
 
+#ifdef CONFIG_BR2_MICOM_VARIANT
 		if(micom == 0)
+#endif
 		{
 			/* 0xF602 command send*/
 			vx5b1d_spi_write(0xFF00,0xAA);

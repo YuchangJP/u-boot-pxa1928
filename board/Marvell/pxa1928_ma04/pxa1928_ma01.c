@@ -71,7 +71,11 @@ DECLARE_GLOBAL_DATA_PTR;
 int get_lcd_landscape(void);
 static int get_lcd_power(void);
 static int get_board_version(void);
+/* GPIO195 MICOM panel variant is not present in the stock 2019 BR2 ROM.
+ * Keep the optional extension available only when explicitly enabled. */
+#ifdef CONFIG_BR2_MICOM_VARIANT
 static int get_board_micom(void);
+#endif
 
 static unsigned int revision = 0;
 
@@ -396,7 +400,11 @@ static void panel_wxga_init_config(struct mmp_disp_info *fbi,int en)
 {
 	if(en) {
 		vx5b1d_reset();
+		#ifdef CONFIG_BR2_MICOM_VARIANT
 		if (0 != vx5b1d_init(get_lcd_landscape(),get_lcd_power(),get_board_micom()))
+#else
+		if (0 != vx5b1d_init(get_lcd_landscape(),get_lcd_power()))
+#endif
 			return NULL;
 	}
 }
@@ -687,6 +695,7 @@ static int get_lcd_power(void)
 	return ret;
 }
 
+#ifdef CONFIG_BR2_MICOM_VARIANT
 static int get_board_micom(void)
 {
 	int ret,micom;
@@ -703,6 +712,7 @@ static int get_board_micom(void)
 
 	return ret;
 }
+#endif
 
 static void show_logo(int type)
 {
@@ -1075,7 +1085,9 @@ unsigned int dtb_offset(void)
 /* BR2 production addition (reconstructed from the production binary;
  * not present in the disclosed source): sensor-population strap.
  * Returns GPIO149 ^ GPIO148. */
-static int br2_sensor_strap(void)
+/* Stock BR2 emits a standalone GPIO149 XOR GPIO148 helper.
+ * Suppress GCC's automatic inlining to preserve the original call boundary. */
+static noinline int br2_sensor_strap(void)
 {
 	int v148, v149;
 
@@ -1084,7 +1096,14 @@ static int br2_sensor_strap(void)
 	v149 = gpio_get_value(149);
 	v148 = gpio_get_value(148);
 
-	return v149 ^ v148;
+	/* Match stock BR2's comparison-based strap handling:
+	 * only invert actual 0/1 GPIO values when GPIO149 is exactly 1.
+	 * Preserve other raw gpio_get_value() values, unlike bitwise XOR. */
+	if (v149 == 1 && v148 == 1)
+		v148 = 0;
+	else if (v149 == 1 && v148 == 0)
+		v148 = 1;
+	return v148;
 }
 
 void handle_dtb(struct fdt_header *devtree)
